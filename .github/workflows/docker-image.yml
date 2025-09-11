@@ -1,5 +1,3 @@
-name: Build and Push Multi-Arch Docker Images
-
 on:
   push:
     branches:
@@ -41,67 +39,25 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "VERSION_WITHOUT_V=${VERSION#v}" >> $GITHUB_OUTPUT
 
-      # 构建并推送各架构镜像到中间 tag
-      - name: Build and push AMD64 image
+      # 构建并推送多架构镜像（版本标签）
+      - name: Build and push multi-arch image with version tag
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate
+            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}
 
-      - name: Build and push ARM64 image
+      # 构建并推送多架构镜像（latest标签）
+      - name: Build and push multi-arch image with latest tag
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate
-
-      - name: Build and push ARMv7 image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/arm/v7
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate
-
-      # 创建并推送多架构 manifest，版本号和latest都推
-      - name: Create and push multi-arch manifest
-        run: |
-          VERSION="${{ steps.get_version.outputs.VERSION }}"
-          # 创建 manifest
-          docker manifest create ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate
-
-          docker manifest create ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate
-
-          # 注解
-          docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate --arch amd64
-          docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate --arch arm64
-          docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate --arch arm --variant v7
-
-          docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate --arch amd64
-          docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate --arch arm64
-          docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate --arch arm --variant v7
-
-          # 推送
-          docker manifest push ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION}
-          docker manifest push ghcr.io/${{ github.repository_owner }}/katelyatv:latest
+            ghcr.io/${{ github.repository_owner }}/katelyatv:latest
 
       # 可选：创建 Release
       - name: Create Release
@@ -112,8 +68,17 @@ jobs:
           body: |
             ## What's Changed
             ${{ github.event.head_commit.message }}
+
             ## Docker Images
             - Multi-arch image: `ghcr.io/${{ github.repository_owner }}/katelyatv:latest`
-            - Multi-arch version: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}`
+            - Multi-arch version: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}
+
+            ## Pull Commands
+
+            ```bash
+            # Pull multi-arch image (automatically selects correct architecture)
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:latest
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}
+            ```
           draft: false
           prerelease: false
