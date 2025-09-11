@@ -124,7 +124,7 @@ export interface SourceSearchInfo {
   status: number;            // 返回状态码
   data_count: number;        // 数据数量
   error: string;             // 错误描述
-  error_details?: any;       // 完整的错误对象信息，包括TypeError内容和异常的cause
+  error_details?: unknown;       // 完整的错误对象信息，包括TypeError内容和异常的cause
   duration: number;          // 用时（单位毫秒）
 }
 

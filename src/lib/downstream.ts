@@ -1,7 +1,7 @@
+import { retryableTask } from '@/lib/concurrent';
 import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
 import { SearchResult, SourceSearchInfo } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
-import { retryableTask } from '@/lib/concurrent';
 
 interface ApiSearchItem {
   vod_id: string;
@@ -33,7 +33,7 @@ export async function searchFromApi(
     const apiName = apiSite.name;
     url = apiUrl;
     
-    console.log(`开始搜索数据源 ${apiName} (${apiSite.key})，请求URL: ${apiUrl}`);
+    // console.log(`开始搜索数据源 ${apiName} (${apiSite.key})，请求URL: ${apiUrl}`);
 
     // 使用带重试机制的请求，最多重试3次，仅对超时错误进行重试
     const response = await retryableTask(
@@ -56,17 +56,21 @@ export async function searchFromApi(
       1000,  // 重试延迟1秒
       (error) => {
         // 只对超时错误进行重试
-        return error?.name === 'AbortError' || 
-               error?.message?.includes('aborted') ||
-               error?.message?.includes('timeout') ||
-               error?.code === 'ETIMEDOUT';
+        if (typeof error !== 'object' || error === null) {
+          return false;
+        }
+        
+        const err = error as { name?: string; message?: string; code?: string };
+        return err.name === 'AbortError' || 
+               (err.message && (err.message.includes('aborted') || err.message.includes('timeout'))) ||
+               err.code === 'ETIMEDOUT';
       }
     );
 
     status = response.status;
 
     if (!response.ok) {
-      console.error(`数据源 ${apiName} (${apiSite.key}) 请求失败，状态码: ${response.status}`);
+      // console.error(`数据源 ${apiName} (${apiSite.key}) 请求失败，状态码: ${response.status}`);
       error = `HTTP ${response.status}`;
       return {
         results: [],
@@ -90,7 +94,7 @@ export async function searchFromApi(
       !Array.isArray(data.list) ||
       data.list.length === 0
     ) {
-      console.log(`数据源 ${apiName} (${apiSite.key}) 返回空结果`);
+      // // console.log(`数据源 ${apiName} (${apiSite.key}) 返回空结果`);
       return {
         results: [],
         sourceInfo: {
@@ -107,7 +111,7 @@ export async function searchFromApi(
     }
     
     dataCount = data.list.length;
-    console.log(`数据源 ${apiName} (${apiSite.key}) 返回 ${data.list.length} 条结果`);
+    // // console.log(`数据源 ${apiName} (${apiSite.key}) 返回 ${data.list.length} 条结果`);
     // 处理第一页结果
     const results = data.list.map((item: ApiSearchItem) => {
       let episodes: string[] = [];
@@ -193,10 +197,14 @@ export async function searchFromApi(
               1000,  // 重试延迟1秒
               (error) => {
                 // 只对超时错误进行重试
-                return error?.name === 'AbortError' || 
-                       error?.message?.includes('aborted') ||
-                       error?.message?.includes('timeout') ||
-                       error?.code === 'ETIMEDOUT';
+                if (typeof error !== 'object' || error === null) {
+                  return false;
+                }
+                
+                const err = error as { name?: string; message?: string; code?: string };
+                return err.name === 'AbortError' || 
+                       (err.message && (err.message.includes('aborted') || err.message.includes('timeout'))) ||
+                       err.code === 'ETIMEDOUT';
               }
             );
 
@@ -274,7 +282,7 @@ export async function searchFromApi(
   } catch (err) {
     const duration = Date.now() - startTime;
     error = err instanceof Error ? err.message : String(err);
-    console.error(`数据源 ${apiSite.name} (${apiSite.key}) 搜索失败:`, err);
+    // console.error(`数据源 ${apiSite.name} (${apiSite.key}) 搜索失败:`, err);
     return {
       results: [],
       sourceInfo: {
@@ -324,10 +332,14 @@ export async function getDetailFromApi(
     1000,  // 重试延迟1秒
     (error) => {
       // 只对超时错误进行重试
-      return error?.name === 'AbortError' || 
-             error?.message?.includes('aborted') ||
-             error?.message?.includes('timeout') ||
-             error?.code === 'ETIMEDOUT';
+      if (typeof error !== 'object' || error === null) {
+        return false;
+      }
+      
+      const err = error as { name?: string; message?: string; code?: string };
+      return err.name === 'AbortError' || 
+             (err.message && (err.message.includes('aborted') || err.message.includes('timeout'))) ||
+             err.code === 'ETIMEDOUT';
     }
   );
 
@@ -416,10 +428,14 @@ async function handleSpecialSourceDetail(
     1000,  // 重试延迟1秒
     (error) => {
       // 只对超时错误进行重试
-      return error?.name === 'AbortError' || 
-             error?.message?.includes('aborted') ||
-             error?.message?.includes('timeout') ||
-             error?.code === 'ETIMEDOUT';
+      if (typeof error !== 'object' || error === null) {
+        return false;
+      }
+      
+      const err = error as { name?: string; message?: string; code?: string };
+      return err.name === 'AbortError' || 
+             (err.message && (err.message.includes('aborted') || err.message.includes('timeout'))) ||
+             err.code === 'ETIMEDOUT';
     }
   );
 

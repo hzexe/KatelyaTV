@@ -9,7 +9,7 @@
  */
 export async function limitConcurrency<T>(
   tasks: (() => Promise<T>)[],
-  limit: number = 5
+  limit = 5
 ): Promise<T[]> {
   const results: T[] = new Array(tasks.length);
   
@@ -26,7 +26,7 @@ export async function limitConcurrency<T>(
         semaphore.count++;
         resolve();
       } else {
-        semaphore.queue.push(resolve);
+        semaphore.queue.push(resolve as (value: unknown) => void);
       }
     });
   };
@@ -37,7 +37,7 @@ export async function limitConcurrency<T>(
     if (semaphore.queue.length > 0) {
       semaphore.count++;
       const resolve = semaphore.queue.shift();
-      if (resolve) resolve();
+      if (resolve) resolve(undefined);
     }
   };
   
@@ -69,17 +69,25 @@ export async function limitConcurrency<T>(
  */
 export async function retryableTask<T>(
   task: () => Promise<T>,
-  retries: number = 3,
-  delay: number = 1000,
-  isRetryableError: (error: any) => boolean = (error) => {
+  retries = 3,
+  delay = 1000,
+  isRetryableError: (error: unknown) => boolean = (error: unknown): boolean => {
     // 默认只对AbortError（超时）进行重试
-    return error?.name === 'AbortError' || 
-           error?.message?.includes('aborted') ||
-           error?.message?.includes('timeout') ||
-           error?.code === 'ETIMEDOUT';
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+    
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+    
+    const err = error as { name?: string; message?: string; code?: string };
+    return err.name === 'AbortError' || 
+           (err.message && (err.message.includes('aborted') || err.message.includes('timeout'))) ||
+           err.code === 'ETIMEDOUT';
   }
 ): Promise<T> {
-  let lastError: any;
+  let lastError: unknown;
   
   for (let i = 0; i <= retries; i++) {
     try {
@@ -89,7 +97,7 @@ export async function retryableTask<T>(
       
       // 如果不是最后一次重试且错误是可重试的，则等待后重试
       if (i < retries && isRetryableError(error)) {
-        console.log(`任务执行失败，${delay}ms后进行第${i + 1}次重试:`, error.message);
+        // console.log(`任务执行失败，${delay}ms后进行第${i + 1}次重试:`, error.message);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

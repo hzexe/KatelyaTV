@@ -169,7 +169,7 @@ async function initConfig() {
           },
           UserConfig: {
             AllowRegister: process.env.NEXT_PUBLIC_ENABLE_REGISTER === 'true',
-            Users: allUsers as any,
+            Users: allUsers as { username: string; role: 'user' | 'admin' | 'owner' }[],
           },
           SourceConfig: apiSiteEntries.map(([key, site]) => ({
             key,
@@ -189,9 +189,11 @@ async function initConfig() {
       }
 
       // 更新缓存
+    if (adminConfig) {
       cachedConfig = adminConfig;
+    }
     } catch (err) {
-      console.error('加载管理员配置失败:', err);
+      console.error('加载管理员配置失败:', err instanceof Error ? err.message : String(err));
     }
   } else {
     // 本地存储直接使用文件配置
@@ -313,6 +315,7 @@ export async function getConfig(): Promise<AdminConfig> {
   return cachedConfig;
   } catch (error) {
     // 如果数据库访问失败，回退到默认配置
+    console.error('数据库访问失败:', error instanceof Error ? error.message : String(error));
     await initConfig();
     return cachedConfig;
   }
@@ -326,7 +329,7 @@ export async function resetConfig() {
     try {
       userNames = await (storage as any).getAllUsers();
     } catch (e) {
-      console.error('获取用户列表失败:', e);
+      console.error('获取用户列表失败:', e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -347,7 +350,7 @@ export async function resetConfig() {
 
   // 从文件中获取源信息，用于补全源
   const apiSiteEntries = Object.entries(fileConfig.api_site);
-  let allUsers = userNames.map((uname) => ({
+  let allUsers: { username: string; role: 'user' | 'admin' | 'owner' }[] = userNames.map((uname) => ({
     username: uname,
     role: 'user',
   }));
@@ -392,9 +395,11 @@ export async function resetConfig() {
     // serverless 环境，直接使用 adminConfig
     cachedConfig = adminConfig;
   }
-  cachedConfig.SiteConfig = adminConfig.SiteConfig;
-  cachedConfig.UserConfig = adminConfig.UserConfig;
-  cachedConfig.SourceConfig = adminConfig.SourceConfig;
+  if (adminConfig) {
+    cachedConfig.SiteConfig = adminConfig.SiteConfig;
+    cachedConfig.UserConfig = adminConfig.UserConfig;
+    cachedConfig.SourceConfig = adminConfig.SourceConfig;
+  }
 }
 
 export async function getCacheTime(): Promise<number> {
@@ -456,7 +461,7 @@ export async function getFilteredApiSites(userName?: string): Promise<ApiSite[]>
       console.log(`用户 ${userName} 成人内容过滤设置: ${shouldFilterAdult ? '过滤' : '不过滤'}`);
     } catch (error) {
       // 获取用户设置失败时，默认过滤成人内容
-      console.warn('获取用户设置失败，使用默认过滤策略:', error);
+      console.warn('获取用户设置失败，使用默认过滤策略:', error instanceof Error ? error.message : String(error));
     }
   } else {
     console.log('未提供用户名，使用默认过滤策略: 过滤成人内容');
