@@ -48,8 +48,8 @@ export async function GET(request: Request) {
       return addCorsHeaders(response);
     }
 
-    const results = await searchFromApi(targetSite, query);
-    const result = results.filter((r) => r.title === query);
+    const searchResult = await searchFromApi(targetSite, query);
+    const result = searchResult.results.filter((r) => r.title === query);
     const cacheTime = await getCacheTime();
 
     if (result.length === 0) {
