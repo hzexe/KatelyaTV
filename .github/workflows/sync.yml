@@ -20,14 +20,24 @@ jobs:
       - name: Checkout target repo
         uses: actions/checkout@v4
 
-      # Step 2: run the sync action
-      - name: Sync upstream changes
-        id: sync
+      # Step 2: run the sync action to main branch
+      - name: Sync upstream changes to main
+        id: sync_main
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
         with:
           upstream_sync_repo: katelya77/KatelyaTV
           upstream_sync_branch: main
           target_sync_branch: main
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 3: run the sync action to arm branch
+      - name: Sync upstream changes to arm
+        id: sync_arm
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          upstream_sync_repo: katelya77/KatelyaTV
+          upstream_sync_branch: main
+          target_sync_branch: arm
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync check
