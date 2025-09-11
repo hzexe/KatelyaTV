@@ -92,7 +92,7 @@
 	 "bdzy": {
       "api": "https://api.1080zyku.com/inc/apijson_vod.php",
       "name": "百度资源"
-    }
+    },
     "hongniuzy": {
       "api": "https://www.hongniuzy2.com/api.php/provide/vod",
       "name": "红牛资源"
@@ -144,6 +144,6 @@
       "api": "https://api.liangzizy.com/inc/apijson_vod.php",
       "name": "量子资源3",
       "is_adult": false
-    },
+    }
   }
 }
