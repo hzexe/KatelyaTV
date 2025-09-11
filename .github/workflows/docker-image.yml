@@ -49,7 +49,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate
 
       - name: Build and push ARM64 image
         uses: docker/build-push-action@v5
@@ -58,7 +58,7 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate
 
       - name: Build and push ARMv7 image
         uses: docker/build-push-action@v5
@@ -67,7 +67,7 @@ jobs:
           platforms: linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7
+            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate
 
       # 创建并推送多架构 manifest，版本号和latest都推
       - name: Create and push multi-arch manifest
@@ -75,29 +75,29 @@ jobs:
           VERSION="${{ steps.get_version.outputs.VERSION }}"
           # 创建 manifest
           docker manifest create ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:arm64 \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:armv7
+            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate \
+            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate \
+            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate
 
           docker manifest create ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:amd64 \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:arm64 \
-            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:armv7
+            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate \
+            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate \
+            --amend ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate
 
           # 注解
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64 --arch amd64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate --arch amd64
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64 --arch arm64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate --arch arm64
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION} \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7 --arch arm --variant v7
+            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate --arch arm --variant v7
 
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64 --arch amd64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:amd64-intermediate --arch amd64
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64 --arch arm64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm64-intermediate --arch arm64
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:latest \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7 --arch arm --variant v7
+            ghcr.io/${{ github.repository_owner }}/katelyatv:armv7-intermediate --arch arm --variant v7
 
           # 推送
           docker manifest push ghcr.io/${{ github.repository_owner }}/katelyatv:${VERSION}
