@@ -1,5 +1,5 @@
 import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
-import { SearchResult } from '@/lib/types';
+import { SearchResult, SourceSearchInfo } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
 
 interface ApiSearchItem {
@@ -18,12 +18,21 @@ interface ApiSearchItem {
 export async function searchFromApi(
   apiSite: ApiSite,
   query: string
-): Promise<SearchResult[]> {
+): Promise<{results: SearchResult[], sourceInfo: SourceSearchInfo}> {
+  const startTime = Date.now();
+  let status = 0;
+  let dataCount = 0;
+  let error = '';
+  let url = '';
+  
   try {
     const apiBaseUrl = apiSite.api;
     const apiUrl =
       apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
     const apiName = apiSite.name;
+    url = apiUrl;
+    
+    console.log(`开始搜索数据源 ${apiName} (${apiSite.key})，请求URL: ${apiUrl}`);
 
     // 添加超时处理
     const controller = new AbortController();
@@ -35,9 +44,24 @@ export async function searchFromApi(
     });
 
     clearTimeout(timeoutId);
+    status = response.status;
 
     if (!response.ok) {
-      return [];
+      console.error(`数据源 ${apiName} (${apiSite.key}) 请求失败，状态码: ${response.status}`);
+      error = `HTTP ${response.status}`;
+      return {
+        results: [],
+        sourceInfo: {
+          source_key: apiSite.key,
+          source_name: apiName,
+          url: url,
+          status: status,
+          data_count: 0,
+          error: error,
+          error_details: error ? undefined : undefined,  // 确保在没有错误时error_details字段正确处理
+          duration: Date.now() - startTime
+        }
+      };
     }
 
     const data = await response.json();
@@ -47,8 +71,24 @@ export async function searchFromApi(
       !Array.isArray(data.list) ||
       data.list.length === 0
     ) {
-      return [];
+      console.log(`数据源 ${apiName} (${apiSite.key}) 返回空结果`);
+      return {
+        results: [],
+        sourceInfo: {
+          source_key: apiSite.key,
+          source_name: apiName,
+          url: url,
+          status: status,
+          data_count: 0,
+          error: error,
+          error_details: error ? undefined : undefined,  // 确保在没有错误时error_details字段正确处理
+          duration: Date.now() - startTime
+        }
+      };
     }
+    
+    dataCount = data.list.length;
+    console.log(`数据源 ${apiName} (${apiSite.key}) 返回 ${data.list.length} 条结果`);
     // 处理第一页结果
     const results = data.list.map((item: ApiSearchItem) => {
       let episodes: string[] = [];
@@ -181,9 +221,37 @@ export async function searchFromApi(
       });
     }
 
-    return results;
-  } catch (error) {
-    return [];
+    dataCount = results.length;
+    return {
+      results: results,
+      sourceInfo: {
+        source_key: apiSite.key,
+        source_name: apiName,
+        url: url,
+        status: status,
+        data_count: dataCount,
+        error: error,
+        error_details: error ? undefined : undefined,  // 确保在没有错误时error_details字段正确处理
+        duration: Date.now() - startTime
+      }
+    };
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    error = err instanceof Error ? err.message : String(err);
+    console.error(`数据源 ${apiSite.name} (${apiSite.key}) 搜索失败:`, err);
+    return {
+      results: [],
+      sourceInfo: {
+        source_key: apiSite.key,
+        source_name: apiSite.name,
+        url: url,
+        status: status,
+        data_count: 0,
+        error: error,
+        error_details: err,  // 将整个异常对象存储在error_details字段中
+        duration: duration
+      }
+    };
   }
 }
 

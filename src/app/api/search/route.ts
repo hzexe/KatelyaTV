@@ -4,6 +4,7 @@ import { getAvailableApiSites,getCacheTime } from '@/lib/config';
 import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
 import { getStorage } from '@/lib/db';
 import { searchFromApi } from '@/lib/downstream';
+import { SourceSearchInfo } from '@/lib/types';
 
 export const runtime = 'edge';
 
@@ -97,18 +98,15 @@ export async function GET(request: Request) {
 
     // 搜索所有可用的资源站（已根据用户设置动态过滤）
     const searchPromises = availableSites.map((site) => searchFromApi(site, query));
-    const searchResults = (await Promise.all(searchPromises)).flat();
+    const searchResultsWithInfo = await Promise.all(searchPromises);
+    const searchResults = searchResultsWithInfo.flatMap(item => item.results);
+    const sourceSearchInfo: SourceSearchInfo[] = searchResultsWithInfo.map(item => item.sourceInfo);
 
     // 如果搜索结果为空，记录各数据源的搜索情况
     if (searchResults.length === 0) {
       console.log('未找到匹配结果，各数据源搜索情况:');
-      for (const site of availableSites) {
-        try {
-          const results = await searchFromApi(site, query);
-          console.log(`数据源 ${site.name} (${site.key}): ${results.length} 条结果`);
-        } catch (error) {
-          console.error(`数据源 ${site.name} (${site.key}) 搜索失败:`, error);
-        }
+      for (const info of sourceSearchInfo) {
+        console.log(`数据源 ${info.source_name} (${info.source_key}): ${info.data_count} 条结果, 状态: ${info.status}, 用时: ${info.duration}ms`);
       }
     }
 
@@ -117,7 +115,8 @@ export async function GET(request: Request) {
     const response = NextResponse.json(
       { 
         regular_results: searchResults,
-        adult_results: [] // 始终为空，因为成人内容在源头就被过滤了
+        adult_results: [], // 始终为空，因为成人内容在源头就被过滤了
+        source_search_info: sourceSearchInfo // 添加源搜索情况信息
       },
       {
         headers: {
@@ -134,7 +133,8 @@ export async function GET(request: Request) {
       { 
         regular_results: [],
         adult_results: [],
-        error: '搜索失败' 
+        error: '搜索失败',
+        details: error instanceof Error ? error.message : String(error)
       }, 
       { status: 500 }
     );

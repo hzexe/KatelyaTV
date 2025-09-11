@@ -442,6 +442,8 @@ export async function getFilteredApiSites(userName?: string): Promise<ApiSite[]>
     return [];
   }
   
+  console.log(`开始获取过滤后的数据源，用户名: ${userName || '未提供'}`);
+  
   // 默认过滤成人内容
   let shouldFilterAdult = true;
   
@@ -451,10 +453,13 @@ export async function getFilteredApiSites(userName?: string): Promise<ApiSite[]>
       const storage = getStorage();
       const userSettings = await storage.getUserSettings(userName);
       shouldFilterAdult = userSettings?.filter_adult_content !== false; // 默认为 true
+      console.log(`用户 ${userName} 成人内容过滤设置: ${shouldFilterAdult ? '过滤' : '不过滤'}`);
     } catch (error) {
       // 获取用户设置失败时，默认过滤成人内容
-      console.warn('Failed to get user settings, using default filter:', error);
+      console.warn('获取用户设置失败，使用默认过滤策略:', error);
     }
+  } else {
+    console.log('未提供用户名，使用默认过滤策略: 过滤成人内容');
   }
   
   // 防御性处理：为每个源确保 is_adult 字段存在
@@ -465,10 +470,16 @@ export async function getFilteredApiSites(userName?: string): Promise<ApiSite[]>
       is_adult: s.is_adult === true // 严格检查，只有明确为 true 的才是成人内容
     }));
   
+  console.log(`初始数据源数量: ${sites.length}`);
+  
   // 根据用户设置动态过滤成人内容源
   if (shouldFilterAdult) {
+    const adultSites = sites.filter((s) => s.is_adult);
+    console.log(`过滤掉 ${adultSites.length} 个成人内容数据源: ${adultSites.map(s => s.name).join(', ')}`);
     sites = sites.filter((s) => !s.is_adult);
   }
+  
+  console.log(`最终可用数据源数量: ${sites.length}`);
   
   return sites.map((s) => ({
     key: s.key,

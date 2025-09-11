@@ -116,6 +116,18 @@ export interface SearchResult {
   douban_id?: number;
 }
 
+// 源搜索情况信息
+export interface SourceSearchInfo {
+  source_key: string;        // 数据源标识
+  source_name: string;       // 数据源名称
+  url: string;               // 访问地址
+  status: number;            // 返回状态码
+  data_count: number;        // 数据数量
+  error: string;             // 错误描述
+  error_details?: any;       // 完整的错误对象信息，包括TypeError内容和异常的cause
+  duration: number;          // 用时（单位毫秒）
+}
+
 // 豆瓣数据结构
 export interface DoubanItem {
   id: string;
