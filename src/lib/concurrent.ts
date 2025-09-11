@@ -4,7 +4,7 @@
  * 该函数用于控制并发执行的任务数量，避免在低性能设备上因过多并发请求导致超时
  * 
  * @param tasks 要执行的任务数组，每个任务应该是一个返回Promise的函数
- * @param limit 最大并发数，默认为5
+ * @param limit 最大并发数，默认为5（在搜索接口中默认使用8，可通过环境变量SEARCH_CONCURRENCY调整）
  * @returns 返回所有任务执行结果的数组
  */
 export async function limitConcurrency<T>(
@@ -97,7 +97,7 @@ export async function retryableTask<T>(
       
       // 如果不是最后一次重试且错误是可重试的，则等待后重试
       if (i < retries && isRetryableError(error)) {
-        // console.log(`任务执行失败，${delay}ms后进行第${i + 1}次重试:`, error.message);
+        console.log(`任务执行失败，${delay}ms后进行第${i + 1}次重试:`, (error as Error).message);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

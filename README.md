@@ -78,3 +78,9 @@ pnpm build
 4. 独立服务器部署
 
 详细部署说明请参考 [DEPLOYMENT_SUCCESS_GUIDE.md](DEPLOYMENT_SUCCESS_GUIDE.md)。
+
+### 环境变量配置
+
+项目支持通过环境变量调整性能参数：
+
+- `SEARCH_CONCURRENCY`: 控制搜索接口的并发请求数量，默认值为8。设置范围建议在5-10之间。

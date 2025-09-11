@@ -154,7 +154,7 @@ function HomeClient() {
         }
       } catch (error) {
         // 静默处理错误，避免控制台警告
-        // console.error('获取豆瓣数据失败:', error);
+        console.error('获取豆瓣数据失败:', error);
       } finally {
         setLoading(false);
       }

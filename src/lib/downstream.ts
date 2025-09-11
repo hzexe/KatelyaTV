@@ -33,7 +33,7 @@ export async function searchFromApi(
     const apiName = apiSite.name;
     url = apiUrl;
     
-    // console.log(`开始搜索数据源 ${apiName} (${apiSite.key})，请求URL: ${apiUrl}`);
+    console.log(`开始搜索数据源 ${apiName} (${apiSite.key})，请求URL: ${apiUrl}`);
 
     // 使用带重试机制的请求，最多重试3次，仅对超时错误进行重试
     const response = await retryableTask(
@@ -70,7 +70,7 @@ export async function searchFromApi(
     status = response.status;
 
     if (!response.ok) {
-      // console.error(`数据源 ${apiName} (${apiSite.key}) 请求失败，状态码: ${response.status}`);
+      console.error(`数据源 ${apiName} (${apiSite.key}) 请求失败，状态码: ${response.status}`);
       error = `HTTP ${response.status}`;
       return {
         results: [],
@@ -81,7 +81,7 @@ export async function searchFromApi(
           status: status,
           data_count: 0,
           error: error,
-          error_details: error ? { message: error } : undefined,  // 确保在有错误时error_details字段包含错误信息
+          error_details: { message: error, status: response.status },  // 确保在有错误时error_details字段包含错误信息
           duration: Date.now() - startTime
         }
       };
@@ -94,7 +94,8 @@ export async function searchFromApi(
       !Array.isArray(data.list) ||
       data.list.length === 0
     ) {
-      // // console.log(`数据源 ${apiName} (${apiSite.key}) 返回空结果`);
+      console.log(`数据源 ${apiName} (${apiSite.key}) 返回空结果`);
+      const emptyError = '数据源返回空结果';
       return {
         results: [],
         sourceInfo: {
@@ -103,15 +104,15 @@ export async function searchFromApi(
           url: url,
           status: status,
           data_count: 0,
-          error: error,
-          error_details: error ? { message: error } : undefined,  // 确保在有错误时error_details字段包含错误信息
+          error: emptyError,
+          error_details: { message: emptyError, status: status },  // 确保在有错误时error_details字段包含错误信息
           duration: Date.now() - startTime
         }
       };
     }
     
     dataCount = data.list.length;
-    // // console.log(`数据源 ${apiName} (${apiSite.key}) 返回 ${data.list.length} 条结果`);
+    console.log(`数据源 ${apiName} (${apiSite.key}) 返回 ${data.list.length} 条结果`);
     // 处理第一页结果
     const results = data.list.map((item: ApiSearchItem) => {
       let episodes: string[] = [];
@@ -275,14 +276,14 @@ export async function searchFromApi(
         status: status,
         data_count: dataCount,
         error: error,
-        error_details: error ? { message: error } : undefined,  // 确保在有错误时error_details字段包含错误信息
+        error_details: error ? { message: error, status: status } : undefined,  // 确保在有错误时error_details字段包含错误信息
         duration: Date.now() - startTime
       }
     };
   } catch (err) {
     const duration = Date.now() - startTime;
     error = err instanceof Error ? err.message : String(err);
-    // console.error(`数据源 ${apiSite.name} (${apiSite.key}) 搜索失败:`, err);
+    console.error(`数据源 ${apiSite.name} (${apiSite.key}) 搜索失败:`, err);
     return {
       results: [],
       sourceInfo: {

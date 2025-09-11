@@ -26,7 +26,7 @@ export default function UserSettingsPage() {
 
   const handleFilterUpdate = (_enabled: boolean) => {
     // 可以在这里添加一些全局状态更新或通知逻辑
-    // console.log('成人内容过滤状态已更新:', enabled);
+    console.log('成人内容过滤状态已更新:', _enabled);
   };
 
   if (isLoading) {
