@@ -14,67 +14,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build
-        run: pnpm build
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist-electron/*.js
-            dist-electron/*.map
-            public/app-update.yml
-            public/config.json
-            public/epg.xml
-            public/genres.json
-            public/iptv.m3u
-            public/logo.png
-            public/logo.svg
-          body: |
-            ## What's Changed
-            
-            ## Docker Images
-            - Multi-arch image: `ghcr.io/${{ github.repository_owner }}/katelyatv:latest`
-            - Multi-arch version: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}`
-            
-            ## Pull Commands
-            
-            ```bash
-            # Pull multi-arch image (automatically selects correct architecture)
-            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:latest
-            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}
-            ```
-          draft: false
-          prerelease: false
-
       # 设置 QEMU 和 Docker Buildx 以支持多平台构建
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -99,3 +38,23 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}
             ghcr.io/${{ github.repository_owner }}/katelyatv:latest
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ## What's Changed
+            
+            ## Docker Images
+            - Multi-arch image: `ghcr.io/${{ github.repository_owner }}/katelyatv:latest`
+            - Multi-arch version: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}`
+            
+            ## Pull Commands
+            
+            ```bash
+            # Pull multi-arch image (automatically selects correct architecture)
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:latest
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ github.ref_name }}
+            ```
+          draft: false
+          prerelease: false
