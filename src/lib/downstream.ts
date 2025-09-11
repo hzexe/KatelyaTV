@@ -88,13 +88,15 @@ export async function searchFromApi(
     }
 
     const data = await response.json();
+    status = response.status; // 确保在成功获取数据后更新状态码
+    
     if (
       !data ||
       !data.list ||
       !Array.isArray(data.list) ||
       data.list.length === 0
     ) {
-      console.log(`数据源 ${apiName} (${apiSite.key}) 返回空结果`);
+      console.log(`数据源 ${apiName} (${apiSite.key}) 返回空结果，状态码: ${status}`);
       const emptyError = '数据源返回空结果';
       return {
         results: [],
@@ -283,7 +285,16 @@ export async function searchFromApi(
   } catch (err) {
     const duration = Date.now() - startTime;
     error = err instanceof Error ? err.message : String(err);
-    console.error(`数据源 ${apiSite.name} (${apiSite.key}) 搜索失败:`, err);
+    // 如果状态码仍为0，尝试从错误对象中提取HTTP状态码
+    if (status === 0 && typeof err === 'object' && err !== null) {
+      const errorObj = err as { status?: number; response?: { status?: number } };
+      if (errorObj.status) {
+        status = errorObj.status;
+      } else if (errorObj.response?.status) {
+        status = errorObj.response.status;
+      }
+    }
+    console.error(`数据源 ${apiSite.name} (${apiSite.key}) 搜索失败，状态码: ${status}:`, err);
     return {
       results: [],
       sourceInfo: {
