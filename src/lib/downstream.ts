@@ -1,6 +1,7 @@
 import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
 import { SearchResult, SourceSearchInfo } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
+import { retryableTask } from '@/lib/concurrent';
 
 interface ApiSearchItem {
   vod_id: string;
@@ -34,16 +35,34 @@ export async function searchFromApi(
     
     console.log(`开始搜索数据源 ${apiName} (${apiSite.key})，请求URL: ${apiUrl}`);
 
-    // 添加超时处理
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    // 使用带重试机制的请求，最多重试3次，仅对超时错误进行重试
+    const response = await retryableTask(
+      async () => {
+        // 添加超时处理
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(apiUrl, {
-      headers: API_CONFIG.search.headers,
-      signal: controller.signal,
-    });
+        try {
+          const res = await fetch(apiUrl, {
+            headers: API_CONFIG.search.headers,
+            signal: controller.signal,
+          });
+          return res;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      },
+      3,  // 最多重试3次
+      1000,  // 重试延迟1秒
+      (error) => {
+        // 只对超时错误进行重试
+        return error?.name === 'AbortError' || 
+               error?.message?.includes('aborted') ||
+               error?.message?.includes('timeout') ||
+               error?.code === 'ETIMEDOUT';
+      }
+    );
 
-    clearTimeout(timeoutId);
     status = response.status;
 
     if (!response.ok) {
@@ -58,7 +77,7 @@ export async function searchFromApi(
           status: status,
           data_count: 0,
           error: error,
-          error_details: error ? undefined : undefined,  // 确保在没有错误时error_details字段正确处理
+          error_details: error ? { message: error } : undefined,  // 确保在有错误时error_details字段包含错误信息
           duration: Date.now() - startTime
         }
       };
@@ -81,7 +100,7 @@ export async function searchFromApi(
           status: status,
           data_count: 0,
           error: error,
-          error_details: error ? undefined : undefined,  // 确保在没有错误时error_details字段正确处理
+          error_details: error ? { message: error } : undefined,  // 确保在有错误时error_details字段包含错误信息
           duration: Date.now() - startTime
         }
       };
@@ -157,12 +176,29 @@ export async function searchFromApi(
               8000
             );
 
-            const pageResponse = await fetch(pageUrl, {
-              headers: API_CONFIG.search.headers,
-              signal: pageController.signal,
-            });
-
-            clearTimeout(pageTimeoutId);
+            // 使用带重试机制的请求，最多重试3次，仅对超时错误进行重试
+            const pageResponse = await retryableTask(
+              async () => {
+                try {
+                  const res = await fetch(pageUrl, {
+                    headers: API_CONFIG.search.headers,
+                    signal: pageController.signal,
+                  });
+                  return res;
+                } finally {
+                  clearTimeout(pageTimeoutId);
+                }
+              },
+              3,  // 最多重试3次
+              1000,  // 重试延迟1秒
+              (error) => {
+                // 只对超时错误进行重试
+                return error?.name === 'AbortError' || 
+                       error?.message?.includes('aborted') ||
+                       error?.message?.includes('timeout') ||
+                       error?.code === 'ETIMEDOUT';
+              }
+            );
 
             if (!pageResponse.ok) return [];
 
@@ -231,7 +267,7 @@ export async function searchFromApi(
         status: status,
         data_count: dataCount,
         error: error,
-        error_details: error ? undefined : undefined,  // 确保在没有错误时error_details字段正确处理
+        error_details: error ? { message: error } : undefined,  // 确保在有错误时error_details字段包含错误信息
         duration: Date.now() - startTime
       }
     };
@@ -268,15 +304,32 @@ export async function getDetailFromApi(
 
   const detailUrl = `${apiSite.api}${API_CONFIG.detail.path}${id}`;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  // 使用带重试机制的请求，最多重试3次，仅对超时错误进行重试
+  const response = await retryableTask(
+    async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  const response = await fetch(detailUrl, {
-    headers: API_CONFIG.detail.headers,
-    signal: controller.signal,
-  });
-
-  clearTimeout(timeoutId);
+      try {
+        const res = await fetch(detailUrl, {
+          headers: API_CONFIG.detail.headers,
+          signal: controller.signal,
+        });
+        return res;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    },
+    3,  // 最多重试3次
+    1000,  // 重试延迟1秒
+    (error) => {
+      // 只对超时错误进行重试
+      return error?.name === 'AbortError' || 
+             error?.message?.includes('aborted') ||
+             error?.message?.includes('timeout') ||
+             error?.code === 'ETIMEDOUT';
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`详情请求失败: ${response.status}`);
@@ -343,15 +396,32 @@ async function handleSpecialSourceDetail(
 ): Promise<SearchResult> {
   const detailUrl = `${apiSite.detail}/index.php/vod/detail/id/${id}.html`;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  // 使用带重试机制的请求，最多重试3次，仅对超时错误进行重试
+  const response = await retryableTask(
+    async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  const response = await fetch(detailUrl, {
-    headers: API_CONFIG.detail.headers,
-    signal: controller.signal,
-  });
-
-  clearTimeout(timeoutId);
+      try {
+        const res = await fetch(detailUrl, {
+          headers: API_CONFIG.detail.headers,
+          signal: controller.signal,
+        });
+        return res;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    },
+    3,  // 最多重试3次
+    1000,  // 重试延迟1秒
+    (error) => {
+      // 只对超时错误进行重试
+      return error?.name === 'AbortError' || 
+             error?.message?.includes('aborted') ||
+             error?.message?.includes('timeout') ||
+             error?.code === 'ETIMEDOUT';
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`详情页请求失败: ${response.status}`);

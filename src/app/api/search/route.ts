@@ -5,6 +5,7 @@ import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
 import { getStorage } from '@/lib/db';
 import { searchFromApi } from '@/lib/downstream';
 import { SourceSearchInfo } from '@/lib/types';
+import { limitConcurrency } from '@/lib/concurrent';
 
 export const runtime = 'edge';
 
@@ -97,8 +98,9 @@ export async function GET(request: Request) {
     }
 
     // 搜索所有可用的资源站（已根据用户设置动态过滤）
-    const searchPromises = availableSites.map((site) => searchFromApi(site, query));
-    const searchResultsWithInfo = await Promise.all(searchPromises);
+    // 限制并发请求数量为8，以避免在低性能设备上出现超时问题
+    const searchTasks = availableSites.map((site) => () => searchFromApi(site, query));
+    const searchResultsWithInfo = await limitConcurrency(searchTasks, 8);
     const searchResults = searchResultsWithInfo.flatMap(item => item.results);
     const sourceSearchInfo: SourceSearchInfo[] = searchResultsWithInfo.map(item => item.sourceInfo);
 
