@@ -1769,6 +1769,13 @@ function AdminPageClient() {
               <Tv size={14} />
               <span>TVBox 配置</span>
             </button>
+            <button
+              onClick={() => router.push('/debug')}
+              className='px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-md transition-colors flex items-center gap-1'
+            >
+              <Settings size={14} />
+              <span>调试信息</span>
+            </button>
           </div>
 
           {/* 站点配置标签 */}

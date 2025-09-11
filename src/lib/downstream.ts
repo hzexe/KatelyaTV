@@ -46,6 +46,9 @@ export async function searchFromApi(
           const res = await fetch(apiUrl, {
             headers: API_CONFIG.search.headers,
             signal: controller.signal,
+            redirect: 'manual', // 不自动跟随重定向，手动处理
+            // 当设置为 'manual' 时，重定向响应（301, 302等）会被直接返回而不跟随
+            // 这样我们就可以在代码中捕获并正确处理这些重定向响应
           });
           return res;
         } finally {
@@ -69,6 +72,27 @@ export async function searchFromApi(
 
     status = response.status;
 
+    // 检查是否是重定向响应 (300-399)
+    // 当fetch配置为redirect: 'manual'时，重定向响应会直接返回而不跟随
+    // 我们将这些响应视为错误，因为它们通常表示API端点已更改或配置不正确
+    if (response.status >= 300 && response.status < 400) {
+      console.warn(`数据源 ${apiName} (${apiSite.key}) 返回重定向响应，状态码: ${response.status}`);
+      error = `HTTP ${response.status} (重定向)`;
+      return {
+        results: [],
+        sourceInfo: {
+          source_key: apiSite.key,
+          source_name: apiName,
+          url: url,
+          status: status,
+          data_count: 0,
+          error: error,
+          error_details: { message: error, status: response.status },
+          duration: Date.now() - startTime
+        }
+      };
+    }
+
     if (!response.ok) {
       console.error(`数据源 ${apiName} (${apiSite.key}) 请求失败，状态码: ${response.status}`);
       error = `HTTP ${response.status}`;
@@ -81,7 +105,7 @@ export async function searchFromApi(
           status: status,
           data_count: 0,
           error: error,
-          error_details: { message: error, status: response.status },  // 确保在有错误时error_details字段包含错误信息
+          error_details: { message: error, status: response.status },
           duration: Date.now() - startTime
         }
       };
