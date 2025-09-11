@@ -16,11 +16,23 @@ jobs:
     if: ${{ github.event.repository.fork }}
 
     steps:
-      # Step 1: run a standard checkout action
+      # Step 1: run a standard checkout action with fetch depth 0 to get all branches
       - name: Checkout target repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # Step 2: run the sync action to main branch
+      # Step 2: Ensure target branches exist locally
+      - name: Ensure target branches exist
+        run: |
+          # Check if main branch exists locally, if not create it
+          git checkout -B main origin/main
+          # Check if arm branch exists locally, if not create it
+          git checkout -B arm origin/arm
+          # Switch back to main branch for sync operations
+          git checkout main
+
+      # Step 3: run the sync action to main branch
       - name: Sync upstream changes to main
         id: sync_main
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
@@ -29,8 +41,10 @@ jobs:
           upstream_sync_branch: main
           target_sync_branch: main
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          git_config_user: GH Action - Upstream Sync
+          git_config_email: action@github.com
 
-      # Step 3: run the sync action to arm branch
+      # Step 4: run the sync action to arm branch
       - name: Sync upstream changes to arm
         id: sync_arm
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
@@ -39,11 +53,24 @@ jobs:
           upstream_sync_branch: main
           target_sync_branch: arm
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          git_config_user: GH Action - Upstream Sync
+          git_config_email: action@github.com
+
+      # Step 5: Push changes to remote repository
+      - name: Push changes to remote
+        run: |
+          git push origin main:main
+          git push origin arm:arm
 
       - name: Sync check
         if: failure()
         run: |
           echo "[Error] Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork."
+          echo "Debug info:"
+          echo "Local branches:"
+          git branch -a
+          echo "Remote branches:"
+          git ls-remote --heads origin
           exit 1
 
       - name: Delete workflow runs
