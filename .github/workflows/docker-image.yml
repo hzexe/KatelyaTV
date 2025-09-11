@@ -111,6 +111,9 @@ jobs:
       # 创建并推送多架构镜像manifest
       - name: Create and push multi-arch manifest
         run: |
+          # 删除可能存在的本地manifest缓存
+          docker manifest rm ghcr.io/${{ github.repository_owner }}/katelyatv:arm 2>/dev/null || true
+          
           # 创建manifest列表
           docker manifest create ghcr.io/${{ github.repository_owner }}/katelyatv:arm \
             ghcr.io/${{ github.repository_owner }}/katelyatv:arm-amd64 \
