@@ -77,8 +77,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-amd64
-            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-amd64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-amd64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-amd64
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION_WITHOUT_V }}
 
@@ -90,8 +90,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-arm64
-            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-arm64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-arm64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-arm64
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION_WITHOUT_V }}
 
@@ -103,8 +103,8 @@ jobs:
           platforms: linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-armv7
-            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-armv7
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-armv7
+            ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-armv7
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION_WITHOUT_V }}
 
@@ -113,17 +113,17 @@ jobs:
         run: |
           # 使用--amend参数创建manifest列表
           docker manifest create ghcr.io/${{ github.repository_owner }}/katelyatv:arm --amend \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-amd64 --amend \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-arm64 --amend \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-armv7
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-amd64 --amend \
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-arm64 --amend \
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-armv7
           
           # 为manifest添加注解
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:arm \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-amd64 --arch amd64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-amd64 --arch amd64
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:arm \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-arm64 --arch arm64
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-arm64 --arch arm64
           docker manifest annotate ghcr.io/${{ github.repository_owner }}/katelyatv:arm \
-            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-armv7 --arch arm --variant v7
+            ghcr.io/${{ github.repository_owner }}/katelyatv:arm-linux-armv7 --arch arm --variant v7
           
           # 推送manifest
           docker manifest push ghcr.io/${{ github.repository_owner }}/katelyatv:arm
@@ -142,9 +142,9 @@ jobs:
             ## Docker Images
             
             - Multi-arch image: `ghcr.io/${{ github.repository_owner }}/katelyatv:arm`
-            - AMD64 image: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-amd64`
-            - ARM64 image: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-arm64`
-            - ARMv7 image: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-armv7`
+            - AMD64 image: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-amd64`
+            - ARM64 image: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-arm64`
+            - ARMv7 image: `ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-armv7`
             
             ## Pull Commands
             
@@ -153,9 +153,9 @@ jobs:
             docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:arm
             
             # Pull specific architecture
-            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-amd64
-            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-arm64
-            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-armv7
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-amd64
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-arm64
+            docker pull ghcr.io/${{ github.repository_owner }}/katelyatv:${{ steps.get_version.outputs.VERSION }}-linux-armv7
             ```
           draft: false
           prerelease: false
