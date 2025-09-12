@@ -113,7 +113,25 @@ export async function GET(request: Request) {
       return 8;
     })();
     
-    const searchTasks = availableSites.map((site) => () => searchFromApi(site, query));
+    const searchTasks = availableSites.map((site) => () => {
+       return searchFromApi(site, query).catch((error) => {
+         console.error(`搜索数据源 ${site.name} (${site.key}) 时发生错误:`, error);
+         // 返回一个空的结果对象，以保持结果数组的一致性
+         return { 
+           results: [], 
+           sourceInfo: { 
+             source_key: site.key,
+             source_name: site.name, 
+             url: '',
+             status: 500, 
+             data_count: 0, 
+             error: error instanceof Error ? error.message : String(error),
+             error_details: error,
+             duration: 0
+           } 
+         };
+       });
+     });
     const searchResultsWithInfo = await limitConcurrency(searchTasks, searchConcurrency);
     const searchResults = searchResultsWithInfo.flatMap(item => item.results);
     const sourceSearchInfo: SourceSearchInfo[] = searchResultsWithInfo.map(item => item.sourceInfo);
